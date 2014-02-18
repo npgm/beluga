@@ -57,17 +57,23 @@ bl_draw() {
 	fprintf(stderr, "\nDone with recursion!\n");
 	bl_focus(manager->focus_cont->client);
 }
+void bl_split_vertical() { bl_split(BL_SPLIT_VERTICAL);}
+void bl_split_horizontal() { bl_split(BL_SPLIT_HORIZONTAL);}
 void 
-bl_split_vertical() {
-	blt_split(manager->focus_cont, NULL, BL_SPLIT_VERTICAL);
+bl_split(bl_split_t split) {
+	blt_split(manager->focus_cont, NULL, split);
 	manager->focus_cont = manager->focus_cont->bchild;
 	bl_draw();
 }
 
 void
 bl_window_push(bl_client_t *window) {
+	if (window == manager->focus_cont->client || window == NULL) return;
+	if (manager->focus_cont->client)
+		wl_list_insert(&manager->active_screen->windows, &manager->focus_cont->client->link);
 	fprintf(stderr, "Pushing window\n");
 	manager->focus_cont->client = window;
+	wl_list_remove(&window->link);
 	bl_draw();
 }
 
@@ -159,6 +165,7 @@ bl_set_keybindings() {
 	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_d, &spawn, dwb);
 	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_n, &bl_window_next,NULL);
 	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_v, &bl_split_vertical,NULL);
+	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_h, &bl_split_horizontal,NULL);
 }
 
 static void
