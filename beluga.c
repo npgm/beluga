@@ -23,7 +23,7 @@ void
 bl_focus(bl_client_t *window) {
 	if (window == NULL) {
 		fprintf(stderr, "Attempt to focus on Null rejected\n");
-		return;
+		//return;
 	}
 	fprintf(stderr, "Focusing\n");
 	if (!manager->focus_source)
@@ -46,6 +46,16 @@ bl_draw_help(bl_container_t *root, struct swc_rectangle *geom) {
 		fprintf(stderr, "C, ");
 		swc_window_set_geometry(root->client->swc, geom);
 		swc_window_show(root->client->swc);
+	} else
+		fprintf(stderr, "0, ");
+}
+
+void
+bl_next_container() {
+	bl_container_t *new =  blt_next_container(manager->focus_cont);
+	if (manager->focus_cont != new) {
+		manager->focus_cont = new;
+		bl_focus(manager->focus_cont->client);
 	}
 }
 
@@ -67,11 +77,21 @@ bl_split(bl_split_t split) {
 }
 
 void
+bl_wl_list_append(struct wl_list *list, struct wl_list *link) {
+	link->next = list;
+	link->prev = list->prev;
+	list->prev = link;
+	link->prev->next = link;
+}
+
+void
 bl_window_push(bl_client_t *window) {
 	if (window == manager->focus_cont->client || window == NULL) return;
-	if (manager->focus_cont->client)
-		wl_list_insert(&manager->active_screen->windows, &manager->focus_cont->client->link);
-	fprintf(stderr, "Pushing window\n");
+	if (manager->focus_cont->client) {
+		fprintf(stderr, "moving window to invisible list %s\n", manager->focus_cont->client->swc->title);
+		bl_wl_list_append(&manager->active_screen->windows, &manager->focus_cont->client->link);
+	}
+	fprintf(stderr, "Pushing window %s\n", window->swc->title);
 	manager->focus_cont->client = window;
 	wl_list_remove(&window->link);
 	bl_draw();
@@ -84,6 +104,15 @@ bl_prev(struct wl_list *list, struct wl_list *elem) {
 		bl_client_t *window = wl_container_of(ret, window, link);
 		return window;
 }
+
+bl_client_t*
+bl_next2(struct wl_list *list, struct wl_list *elem) {
+		struct wl_list *ret;
+		ret = list->next;
+		bl_client_t *window = wl_container_of(ret, window, link);
+		return window;
+}
+
 bl_client_t*
 bl_next(struct wl_list *list, struct wl_list *elem) {
 		struct wl_list *ret;
@@ -98,7 +127,7 @@ bl_window_next() {
 	if (manager->focus_window) {
 		bl_client_t *window;
 		swc_window_hide(manager->focus_window->swc);
-		window = bl_next(&manager->active_screen->windows, &manager->focus_window->link);
+		window = bl_next2(&manager->active_screen->windows, &manager->focus_window->link);
 
 		bl_window_push(window);
 	} else if (manager->active_screen->num_windows > 0) {
@@ -116,9 +145,10 @@ bl_window_kill(bl_client_t *window) {
 	if (manager->focus_window == window) { 
 		if (bl_next(&manager->active_screen->windows, &window->link) != window) {
 			bl_window_next();
-		} else 
+		} else {
 			manager->focus_window = NULL;
 			manager->focus_cont->client = NULL;
+		}
 	}
 
 	--(window->screen->num_windows);
@@ -157,6 +187,9 @@ static void spawn(uint32_t time, uint32_t value, void *data) {
 				exit(EXIT_FAILURE);
 		}
 }
+void bl_kill() {
+		exit(EXIT_FAILURE);
+}
 /* locally set keybindings for swc */
 void
 bl_set_keybindings() {
@@ -166,6 +199,8 @@ bl_set_keybindings() {
 	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_n, &bl_window_next,NULL);
 	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_v, &bl_split_vertical,NULL);
 	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_h, &bl_split_horizontal,NULL);
+	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_q, &bl_kill,NULL);
+	swc_add_key_binding(SWC_MOD_LOGO, XKB_KEY_c, &bl_next_container,NULL);
 }
 
 static void

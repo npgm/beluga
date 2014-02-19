@@ -66,4 +66,6 @@ typedef struct { /* manager has a list of unmapped windows */
 bl_container_t* blt_init_root(void);
 int blt_split(bl_container_t *current, bl_client_t *new, bl_split_t split);
 void blt_split_rect(bl_split_t split, struct swc_rectangle *geom, struct swc_rectangle *a, struct swc_rectangle *b);
+bl_container_t* blt_next_sibling(bl_container_t *root);
+bl_container_t* blt_next_container(bl_container_t *current);
 #endif //CONT_H

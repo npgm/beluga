@@ -84,4 +84,37 @@ blt_split_rect(bl_split_t split, struct swc_rectangle *geom, struct swc_rectangl
 	}
 }
 
-	
+bl_container_t*
+blt_next_sibling(bl_container_t *root) {
+	return ((root->parent->bchild != root) ? root->parent->bchild : NULL);
+}
+
+bl_container_t*
+blt_next_container(bl_container_t *current) {
+	fprintf(stderr, "Traversing tree...\n");
+	bl_container_t* ct = current;
+	while (ct != NULL) {
+		if (ct->type == BL_NODE_CONTAINER) {
+			fprintf(stderr, "N\n");
+			ct = ct->achild;
+			if (ct->type == BL_CLIENT_CONTAINER) 
+				break;
+		} else {
+			fprintf(stderr, "C\n");
+			while (ct->isroot != 1 && blt_next_sibling(ct) == NULL) {
+				ct = ct->parent;
+				fprintf(stderr, "Step up parent\n");
+			}
+			if (ct->isroot)
+				continue;
+			ct = blt_next_sibling(ct);
+			if (ct->type == BL_CLIENT_CONTAINER)
+				break;
+		}
+	}
+	fprintf(stderr, "Done\n");
+	return ct;
+}
+
+				
+
